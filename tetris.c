@@ -6,6 +6,7 @@
 #include <time.h>
 
 #define TAMANHO_FILA 5 //numero fixo de peças na fila
+#define TAMANHO_FILA 3 //capacidade máxima da pilha de reserva
 
 //Estrutura que representa uma peça
 typedef struct {
@@ -21,7 +22,7 @@ typedef struct {
     int quantidade;
 } Fila;
 
-//-------------funções para controle da fila-------------//
+//-------------funções para controle da FILA-------------//
 
 // inicializa a fila
 void inicializarFila(Fila *fila) {
@@ -85,6 +86,52 @@ void exibirFila(Fila *fila) {
     printf("\n");
 }
 
+//FUNÇÕES DA PILHA
+void inicializarPilha(Pilha *pilha) {
+    pilha->topo = -1;
+}
+
+int pilhaCheia(Pilha *pilha) {
+    return pilha->topo == TAMANHO_PILHA - 1;
+}
+
+int pilhaVazia(Pilha *pilha) {
+    return pilha->topo == -1;
+}
+
+void push(Pilha *pilha, Peca nova) {
+    if(pilhaCheia(pilha)) {
+        printf("\nPilha cheia!\n");
+        return;
+    }
+    pilha->itens[++pilha->topo] = nova;
+}
+
+Peca pop(Pilha *pilha) {
+    Peca removida = {' ', -1};
+
+    if (pilhaVazia(pilha)) {
+        printf("\nPilha vazia!\n");
+        return removida;
+    }
+
+    removida = pilha->itens[pilha->topo--];
+    return removida;
+}
+
+void exibirPilha(Pilha *pilha) {
+    printf("Pilha de reserva (Topo -> Base): ");
+    if (pilhaVazia(pilha)) {
+        printf("[vazia]");
+        return;
+    }
+
+    for (int i = pilha->topo; i >= 0; i--) {
+        printf("[%c %d] ", pilha->itens[i].tipo, pilha->itens[i].id);
+    }
+    printf("\n")
+}
+
 // --------Função para gerar uma nova peça aleatória --------//
 Peca gerarPeca(int id) {
     Peca p;
@@ -94,27 +141,38 @@ Peca gerarPeca(int id) {
     return p;
 }
 
+//EXIBIÇÃO COMPLETA
+void exibirEstado(Fila *fila, Pilha *pilha) {
+    printf("\n==================== ESTADO ATUAL ====================\n");
+    exibirFila(fila);
+    exibirPilha(pilha);
+    printf("======================================================\n");
+}
+
 //--------Função Principal--------//
 int main() {
     Fila fila;
+    Pilha pilha;
     int opcao, idAtual = 0;
-    srand(time(NULL)); //semente para gerar peças aleatórias
 
+    srand(time(NULL)); //semente para gerar peças aleatórias
     inicializarFila(&fila);
+    inicializarPilha(&pilha);
 
     //inicializa a fila com 5 peças
     for (int i = 0; i <TAMANHO_FILA; i++) {
         enqueue(&fila, gerarPeca(idAtual++));
     }
 
-    printf("--------TETRIS STACK - Simulador de fila de peças--------\n");
+    printf("--------TETRIS STACK - Filha e Pilha de Peças--------\n");
 
     do {
-        exibirFila(&fila);
+        exibirEstado(&fila, &pilha);
         
         printf("\nOpções de ação:\n");
-        printf("1 - Jogar peça (dequeue)\n");
-        printf("2 - Inserir nova peça (enqueue)\n");
+        printf("1 - Jogar peça (remover da fila)\n");
+        printf("2 - Reservar peça (mover para pilha)\n");
+        printf("3 - Usar peça reservada (remover da pilha)\n");
         printf("0 - Sair\n");
         printf("Escolha uma opção: ");
         scanf("%d", &opcao);
@@ -128,10 +186,25 @@ int main() {
             }
 
             case 2: {
-                Peca nova = gerarPeca(idAtual++);
-                enqueue(&fila, nova);
-                if (!filaCheia(&fila))
-                    printf("\n✅ Nova peça inserida: [%c %d]\n", nova.tipo, nova.id);
+                // Reservar peça (move da fila para a pilha)
+                if (pilhaCheia(&pilha)) {
+                    printf("\n⚠️  Pilha cheia! Não é possível reservar mais.\n");
+                } else {
+                    Peca reservada = dequeue(&fila);
+                    if (reservada.id != -1) {
+                        push(&pilha, reservada);
+                        printf("\n📦  Peça reservada: [%c %d]\n", reservada.tipo, reservada.id);
+                        enqueue(&fila, gerarPeca(idAtual++));
+                    }
+                }
+                break;
+            }
+
+            case 3: {
+                // Usar peça reservada (remove da pilha)
+                Peca usada = pop(&pilha);
+                if (usada.id != -1)
+                    printf("\n✅  Peça usada da reserva: [%c %d]\n", usada.tipo, usada.id);
                 break;
             }
 
@@ -147,18 +220,6 @@ int main() {
 
     return 0;
 }
-
-
-    // 🧠 Nível Aventureiro: Adição da Pilha de Reserva
-    //
-    // - Implemente uma pilha linear com capacidade para 3 peças.
-    // - Crie funções como inicializarPilha(), push(), pop(), pilhaCheia(), pilhaVazia().
-    // - Permita enviar uma peça da fila para a pilha (reserva).
-    // - Crie um menu com opção:
-    //      2 - Enviar peça da fila para a reserva (pilha)
-    //      3 - Usar peça da reserva (remover do topo da pilha)
-    // - Exiba a pilha junto com a fila após cada ação com mostrarPilha().
-    // - Mantenha a fila sempre com 5 peças (repondo com gerarPeca()).
 
 
     // 🔄 Nível Mestre: Integração Estratégica entre Fila e Pilha
